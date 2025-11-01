@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "all days": {
+      "commandName": "Project",
+      "workingDirectory": "$(ProjectDir)",
+      "dotnetRunMessages": "true",
+      "environmentVariables": {
+      }
+    },
+    "latest": {
+      "commandName": "Project",
+      "workingDirectory": "$(ProjectDir)",
+      "dotnetRunMessages": "true",
+      "commandLineArgs": "latest",
+      "environmentVariables": {
+      }
+    }
+  }
+}
