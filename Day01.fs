@@ -1,8 +1,35 @@
 ﻿module aoc25.Day01
 
-let part1 = (fun _ -> 0)
+open System
 
-let part2 = (fun _ -> 0)
+let parseCommand (command: string) =
+    let num = command[1..] |> int
+
+    match command[0] with
+    | 'L' -> -1 * num
+    | _ -> num
+
+
+let part1 commands =
+    let turnDial start command = (100000 + start + command) % 100
+    let intermediates = commands |> Array.map parseCommand |> Array.scan turnDial 50
+    intermediates |> Seq.filter (fun i -> i = 0) |> Seq.length
+
+let part2 commands =
+    ((0, 50), commands |> Array.map parseCommand)
+    ||> Array.fold (fun (zeros, position) command ->
+        let newPosition = (100000 + position + command) % 100
+
+        let fullRotations = command / 100 |> Math.Abs
+
+        let overflow =
+            match position, position + (command % 100) with
+            | 0, _ -> 0
+            | _, p when p <= 0 || p >= 100 -> 1
+            | _ -> 0
+
+        (zeros + fullRotations + overflow, newPosition))
+    |> fst
 
 let run = runReadAllLines part1 part2
 
@@ -10,13 +37,11 @@ module tests =
     open Swensen.Unquote
     open Xunit
 
-    let example1 = null
+    let example =
+        [| "L68"; "L30"; "R48"; "L5"; "R60"; "L55"; "L1"; "L99"; "R14"; "L82" |]
 
     [<Fact>]
-    let ``Part 1 example`` () = part1 example1 =! 0
-
-    let example2 = null
+    let ``Part 1 example`` () = part1 example =! 3
 
     [<Fact>]
-    let ``Part 2 example`` () = part2 example2 =! 0
-
+    let ``Part 2 example`` () = part2 example =! 6
