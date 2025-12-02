@@ -1,61 +1,55 @@
 ﻿module aoc25.Day02
 
+open System
+
 let parseRange = StringEx.splitC '-' >> (fun r -> (r[0], r[1])) >> TupleEx.map int64
 let parse = StringEx.splitC ',' >> Array.map parseRange
-let digitCount (num: int64) = (num |> double |> log10 |> int) + 1
 
 let isTwoRepetitions (num: int64) =
-    let digits = digitCount num
+    let str = num.ToString().AsSpan()
 
-    if digits % 2 = 1 then
+    if str.Length % 2 = 1 then
         false
     else
-        let factor = pown 10L (digits / 2)
-        let shifted = num / factor
-        (num - shifted) = shifted * factor
+        let halfLen = str.Length / 2
+        let p1 = str.Slice(0, halfLen)
+        let p2 = str.Slice(halfLen, halfLen)
+        MemoryExtensions.Equals(p1, p2, StringComparison.OrdinalIgnoreCase)
 
 let possibleRepetitionLengths =
     let inner digitCount =
-        [ for i in 1.. (digitCount / 2)  do
+        [ for i in 1 .. (digitCount / 2) do
               if digitCount % i = 0 then
                   i ]
         |> List.rev
 
-    memorize inner
+    memorizeThreadLocal inner
 
 let isRepeating (num: int64) =
-    let digits = digitCount num
+    let str = num.ToString()
 
     let rec inner: int list -> bool =
         function
         | [] -> false
         | len :: remaining ->
-            let reps = digits / len
-            let factor = pown 10L len
-            let repVal = num / pown factor (reps - 1)
+            let reps = str.Length / len
 
-            let reconstructed =
-                seq { 0 .. reps - 1 } |> Seq.map (fun i -> repVal * (pown factor i)) |> Seq.sum
+            let part = str.AsSpan(0, len)
+            let mutable m = true
 
-            if reconstructed = num then true else inner remaining
+            for i in 1 .. reps - 1 do
+                let comp = str.AsSpan(i * len, len)
+                m <- m && MemoryExtensions.Equals(part, comp, StringComparison.OrdinalIgnoreCase)
 
-    inner (possibleRepetitionLengths digits)
+            if m then true else inner remaining
 
+    inner (possibleRepetitionLengths str.Length)
 
 let solve filter input =
-    let invalids =
-        input
-        |> parse
-        |> Seq.collect (fun (s, e) -> seq { s..e } |> Seq.filter filter)
-        |> Seq.map int64
-        |> Seq.toList
-
-    invalids |> Seq.sum
-
-
-
-
-
+    input
+    |> parse
+    |> Array.Parallel.map (fun (s, e) -> seq { s..e } |> Seq.filter filter |> Seq.fold (+) 0L)
+    |> Array.sum
 
 let part1 = solve isTwoRepetitions
 let part2 = solve isRepeating
@@ -76,12 +70,6 @@ module tests =
         parsed[1] =! (95, 115)
         parsed |> Array.last =! (2121212118, 2121212124)
         0
-
-    [<Theory>]
-    [<InlineData(9, 1)>]
-    [<InlineData(111, 3)>]
-    [<InlineData(123456789, 9)>]
-    let ``count digits`` (number, expected) = number |> digitCount =! expected
 
     [<Theory>]
     [<InlineData(1122, false)>]
