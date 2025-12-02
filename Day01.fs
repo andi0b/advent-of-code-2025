@@ -14,7 +14,7 @@ let part1 commands =
 let part2 commands =
     ((0, 50), commands |> Array.map parseCommand)
     ||> Array.fold (fun (zeros, position) command ->
-        let fullRotations = command / 100 |> Math.Abs
+        let fullRotations = command / 100 |> abs
 
         let overflow =
             match position, position + (command % 100) with
