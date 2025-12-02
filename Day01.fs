@@ -3,23 +3,17 @@
 open System
 
 let parseCommand (command: string) =
-    let num = command[1..] |> int
+    command[1..] |> int |> (if command[0] = 'L' then (~-) else id)
 
-    match command[0] with
-    | 'L' -> -1 * num
-    | _ -> num
-
+let turnDial start command = (100 + start + command % 100) % 100
 
 let part1 commands =
-    let turnDial start command = (100000 + start + command) % 100
     let intermediates = commands |> Array.map parseCommand |> Array.scan turnDial 50
     intermediates |> Seq.filter (fun i -> i = 0) |> Seq.length
 
 let part2 commands =
     ((0, 50), commands |> Array.map parseCommand)
     ||> Array.fold (fun (zeros, position) command ->
-        let newPosition = (100000 + position + command) % 100
-
         let fullRotations = command / 100 |> Math.Abs
 
         let overflow =
@@ -28,7 +22,7 @@ let part2 commands =
             | _, p when p <= 0 || p >= 100 -> 1
             | _ -> 0
 
-        (zeros + fullRotations + overflow, newPosition))
+        zeros + fullRotations + overflow, turnDial position command)
     |> fst
 
 let run = runReadAllLines part1 part2
