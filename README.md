@@ -1,5 +1,5 @@
 # advent-of-code-2025 
-[![Tests](https://github.com/andi0b/advent-of-code-2025/actions/workflows/dotnet.yml/badge.svg)](https://github.com/andi0b/advent-of-code-2024/actions/workflows/dotnet.yml)
+[![Tests](https://github.com/andi0b/advent-of-code-2025/actions/workflows/dotnet.yml/badge.svg)](https://github.com/andi0b/advent-of-code-2025/actions/workflows/dotnet.yml)
 
 [Advent of Code 2025](https://adventofcode.com/2025/) Solutions in F#
 
