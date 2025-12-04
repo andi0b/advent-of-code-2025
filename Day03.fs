@@ -1,4 +1,4 @@
-﻿module aoc25.Day3
+﻿module aoc25.Day03
 
 let parse (input: string array) =
     input |> Array.map (Seq.map (fun chr -> chr - '0' |> int) >> Seq.toArray)
