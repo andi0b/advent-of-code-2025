@@ -119,6 +119,9 @@ module TupleEx =
     let inline replicate x = (x, x)
     let inline replicate3 x = (x, x, x)
 
+    let inline generate fa fb x = (fa x, fb x)
+    let inline generate3 fa fb fc x = (fa x, fb x, fc)
+
     let fromKeyValue (KeyValue(k, v)) = (k, v)
 
     let toKeyValue (k, v) =

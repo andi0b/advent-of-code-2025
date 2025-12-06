@@ -1,7 +1,5 @@
 ﻿module aoc25.Day05
 
-open System
-
 let parse =
     let parseRange = StringEx.splitC '-' >> (fun s -> int64 s[0], int64 s[1])
 
@@ -13,11 +11,12 @@ let parse =
     StringEx.splitSs [| "\n\n"; "\r\n\r\n" |]
     >> (fun s -> mapLines parseRange s[0], mapLines int64 s[1])
 
-let inRange ranges num =
-    ranges |> Array.tryFind (fun (s, e) -> num >= s && num <= e) |> Option.isSome
-
 let part1 input =
     let ranges, nums = parse input
+
+    let inRange ranges num =
+        ranges |> Array.tryFind (fun (s, e) -> num >= s && num <= e) |> Option.isSome
+
     nums |> Array.filter (inRange ranges) |> Array.length
 
 let part2 input =
@@ -29,10 +28,10 @@ let part2 input =
         | remaining -> cur, remaining
 
     sortedRanges
-        |> List.unfold (function
-            | cur :: remaining -> mergeNext cur remaining |> Some
-            | _ -> None)
-        |> List.sumBy (fun (s, e) -> e - s + 1L)
+    |> List.unfold (function
+        | cur :: remaining -> mergeNext cur remaining |> Some
+        | _ -> None)
+    |> List.sumBy (fun (s, e) -> e - s + 1L)
 
 
 let run = runReadAllText part1 part2
