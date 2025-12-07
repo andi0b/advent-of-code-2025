@@ -7,12 +7,12 @@ let findSplitterSets =
     Array.map (Seq.indexed >> Seq.filter (snd >> ((=) '^')) >> Seq.map fst >> Set)
 
 let part1 input =
-    ((Set [ findStart input ], 0), findSplitterSets input)
-    ||> Array.fold (fun (tachyons, splits) splitter ->
+    (Set [ findStart input ], findSplitterSets input)
+    ||> Seq.mapFold (fun tachyons splitter ->
         let activeSplitters = splitter |> Set.intersect tachyons
         let newTachyons = activeSplitters |> Seq.collect (fun s -> [ s - 1; s + 1 ]) |> Set
-        Set.difference tachyons activeSplitters |> Set.union newTachyons, splits + activeSplitters.Count)
-    |> snd
+        activeSplitters.Count, Set.difference tachyons activeSplitters |> Set.union newTachyons)
+    |> (fst >> Seq.sum)
 
 let part2 input =
     ([ findStart input, 1L ], findSplitterSets input)
