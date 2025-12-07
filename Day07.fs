@@ -19,9 +19,7 @@ let part2 input =
     ||> Array.fold (fun tachyons splitters ->
         [ for pos, count in tachyons do
               match splitters |> Set.contains pos with
-              | true ->
-                  yield pos - 1, count
-                  yield pos + 1, count
+              | true -> yield! [ pos - 1, count; pos + 1, count ]
               | false -> yield pos, count ]
         |> List.groupBy fst
         |> List.map (TupleEx.mapSnd <| List.sumBy snd))
