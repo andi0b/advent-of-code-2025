@@ -1,43 +1,31 @@
 ﻿module aoc25.Day07
 
-let parse (input: string array) =
-    let lines = input |> Array.map _.ToCharArray()
-    let start = lines[0] |> Array.findIndex ((=) 'S')
-    lines, start
+let findStart input =
+    input |> Array.item 0 |> Seq.findIndex ((=) 'S')
 
-let findSplitters (line: char array) =
-    line |> Seq.indexed |> Seq.filter (snd >> ((=) '^')) |> Seq.map fst |> Set
+let findSplitterSets =
+    Array.map (Seq.indexed >> Seq.filter (snd >> ((=) '^')) >> Seq.map fst >> Set)
+    >> Array.filter (not << Set.isEmpty)
 
 let part1 input =
-    let lines, start = parse input
-
-    ((Set [ start ], 0), lines)
-    ||> Array.fold (fun (tachyons, splits) line ->
-        let splitters = line |> findSplitters
-        let activeSplitters = Set.intersect tachyons splitters
-
-        let splitTachyons =
-            activeSplitters |> Seq.collect (fun s -> [ s - 1; s + 1 ]) |> Set
-
-        let newTachyons = Set.difference tachyons activeSplitters |> Set.union splitTachyons
-        newTachyons, splits + activeSplitters.Count)
+    ((Set [ findStart input ], 0), findSplitterSets input)
+    ||> Array.fold (fun (tachyons, splits) splitter ->
+        let activeSplitters = splitter |> Set.intersect tachyons
+        let newTachyons = activeSplitters |> Seq.collect (fun s -> [ s - 1; s + 1 ]) |> Set
+        Set.difference tachyons activeSplitters |> Set.union newTachyons, splits + activeSplitters.Count)
     |> snd
 
 let part2 input =
-    let lines, start = parse input
-
-    ([ (start, 1L) ], lines)
-    ||> Array.fold (fun tachyons line ->
-        let splitters = line |> findSplitters
-
-        tachyons
-        |> List.collect (fun (pos, count) ->
-            if splitters |> Set.contains pos then
-                [ (pos - 1, count); (pos + 1, count) ]
-            else
-                [ (pos, count) ])
+    ([ findStart input, 1L ], findSplitterSets input)
+    ||> Array.fold (fun tachyons splitters ->
+        [ for pos, count in tachyons do
+              match splitters |> Set.contains pos with
+              | true ->
+                  yield pos - 1, count
+                  yield pos + 1, count
+              | false -> yield pos, count ]
         |> List.groupBy fst
-        |> List.map (fun (pos, groups) -> pos, groups |> List.sumBy snd))
+        |> List.map (TupleEx.mapSnd <| List.sumBy snd))
     |> List.sumBy snd
 
 let run = runReadAllLines part1 part2
@@ -66,7 +54,6 @@ module tests =
 
     [<Fact>]
     let ``Part 1 example`` () = part1 example =! 21
-
 
     [<Fact>]
     let ``Part 2 example`` () = part2 example =! 40
