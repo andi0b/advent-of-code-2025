@@ -7,41 +7,36 @@ let getColumns (lines: string array) =
     |> Array.map _.Split(' ', StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
     |> Array.transpose
 
+let getOp =
+    function
+    | '*' -> (*)
+    | '+' -> (+)
+    | c -> failwith $"invalid op '{c}'"
+
 let part1 =
-    let sumColumn (col: string array) =
-        let op =
-            match col[col.Length - 1] with
-            | "*" -> (*)
-            | "+" -> (+)
-            | _ -> failwith "huh"
+    getColumns
+    >> Array.sumBy (fun col ->
+        let op = col[col.Length - 1][0] |> getOp
+        col[.. col.Length - 2] |> Array.map int64 |> Array.reduce op)
 
-        col[.. col.Length - 2] |> Array.map int64 |> Array.reduce op
 
-    getColumns >> Array.sumBy sumColumn
+let splitWhen predicate =
+    Array.unfold (function
+        | [||] -> None
+        | remaining ->
+            match remaining |> Array.tryFindIndex predicate with
+            | Some idx -> Some(remaining[.. idx - 1], remaining[idx + 1 ..])
+            | None -> Some(remaining, [||]))
 
 let part2 (lines: string array) =
     let transposed = lines |> Array.map _.ToCharArray() |> Array.transpose
 
-    let chunks =
-        transposed
-        |> Array.unfold (function
-            | [||] -> None
-            | remaining ->
-                match remaining |> Array.tryFindIndex (Array.forall ((=) ' ')) with
-                | Some idx -> Some(remaining[.. idx - 1], remaining[idx + 1 ..])
-                | None -> Some(remaining, [||]))
-
-    chunks
+    transposed
+    |> splitWhen (Array.forall ((=) ' '))
     |> Array.sumBy (fun chunk ->
-        let op =
-            match chunk[0] |> Array.last with
-            | '*' -> (*)
-            | '+' -> (+)
-            | c -> failwith $"invalid op '{c}'"
-
         chunk
         |> Array.map (fun chars -> chars[.. chars.Length - 2] |> String |> int64)
-        |> Array.reduce op)
+        |> Array.reduce (chunk[0] |> Array.last |> getOp))
 
 let run = runReadAllLines part1 part2
 
