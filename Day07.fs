@@ -5,7 +5,6 @@ let findStart input =
 
 let findSplitterSets =
     Array.map (Seq.indexed >> Seq.filter (snd >> ((=) '^')) >> Seq.map fst >> Set)
-    >> Array.filter (not << Set.isEmpty)
 
 let part1 input =
     ((Set [ findStart input ], 0), findSplitterSets input)
