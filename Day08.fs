@@ -63,10 +63,6 @@ let part2 input =
         |> Seq.sortBy snd
         |> Seq.toList
 
-    let findConnections item =
-        distances
-        |> Seq.filter (fun ((a,b), _) -> a = item || b = item)
-        |> Seq.map (fun ((a,b), _) -> if item = a then b else a)
 
     let boxes = Set [0.. (input |> parse |> Array.length) - 1]
 
