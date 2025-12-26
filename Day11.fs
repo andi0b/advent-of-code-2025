@@ -1,8 +1,7 @@
 ﻿module aoc25.Day11
 
 let parse =
-    Array.map
-    <| (StringEx.splitS ": " >> fun r -> r[0], r[1] |> StringEx.splitS " ")
+    Array.map (StringEx.splitS ": " >> fun r -> r[0], r[1] |> StringEx.splitS " ")
 
 let paths input =
     let map = parse input |> Map |> Map.add "out" [||]
