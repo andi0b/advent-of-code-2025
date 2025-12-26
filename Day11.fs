@@ -34,17 +34,9 @@ let part1 input =
 
 let part2 input =
     let parsed = parse input |> Array.append [| "out", [||] |]
-
     let name2index = parsed |> Array.mapi (fun i (key, _) -> key, i |> int16) |> Map
-
-    let map =
-        parsed
-        |> Array.map (fun (_, value) -> value |> Array.map (fun str -> name2index |> Map.find str))
-
-    let svr = name2index["svr"]
-    let fft = name2index["fft"]
-    let dac = name2index["dac"]
-    let out = name2index["out"]
+    let getIndex n = name2index[n]
+    let map = parsed |> Array.map (fun (_, value) -> value |> Array.map getIndex)
 
     let paths from to' =
         let rec inner' node =
@@ -59,10 +51,13 @@ let part2 input =
         inner from
 
     let combinePaths =
-        List.pairwise >> List.map (fun (a, b) -> paths a b) >> List.reduce (*)
+        List.map getIndex
+        >> List.pairwise
+        >> List.map (fun x -> x ||> paths)
+        >> List.reduce (*)
 
-    combinePaths [ svr; fft; dac; out ] + combinePaths [ svr; dac; fft; out ]
-
+    combinePaths [ "svr"; "fft"; "dac"; "out" ]
+    + combinePaths [ "svr"; "dac"; "fft"; "out" ]
 
 let run = runReadAllLines part1 part2
 
