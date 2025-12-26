@@ -4,33 +4,7 @@ let parse =
     Array.map
     <| (StringEx.splitS ": " >> fun r -> r[0], r[1] |> StringEx.splitS " ")
 
-let part1 input =
-    let nextNodes (cur: string list, map: Map<string, string array>) =
-        let head = cur |> List.head
-        let nodes = map |> Map.tryFind head |> Option.defaultValue Array.empty
-
-        [ for n in nodes do
-              n :: cur, map |> Map.remove head ]
-
-    let paths from to' map =
-        [ [ from ], map ]
-        |> List.unfold (fun items ->
-            let outs, remaining =
-                items
-                |> List.partition (function
-                    | head :: _, _ when head = to' -> true
-                    | _ -> false)
-
-            let next = remaining |> List.collect nextNodes
-
-            match outs, next with
-            | [], [] -> None
-            | _ -> Some(outs, next))
-        |> List.collect id
-
-    parse input |> Map |> paths "you" "out" |> List.length
-
-let part2 input =
+let paths input =
     let map = parse input |> Map |> Map.add "out" [||]
 
     let rec paths' (from, to') =
@@ -40,8 +14,12 @@ let part2 input =
             map[from] |> Array.sumBy (fun n -> paths (n, to'))
 
     and paths = memorize paths'
+    paths
 
-    let combinePaths = List.pairwise >> List.map paths >> List.reduce (*)
+let part1 input = paths input ("you", "out")
+
+let part2 input =
+    let combinePaths = List.pairwise >> List.map (paths input) >> List.reduce (*)
 
     combinePaths [ "svr"; "fft"; "dac"; "out" ]
     + combinePaths [ "svr"; "dac"; "fft"; "out" ]
