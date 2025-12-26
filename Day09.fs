@@ -44,5 +44,5 @@ module tests =
 
     let example2 = null
 
-    [<Fact>]
+    [<Fact(Skip = "missing")>]
     let ``Part 2 example`` () = part2 example2 =! -1
