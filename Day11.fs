@@ -1,10 +1,8 @@
 ﻿module aoc25.Day11
 
-
 let parse =
     Array.map
     <| (StringEx.splitS ": " >> fun r -> r[0], r[1] |> StringEx.splitS " ")
-
 
 let part1 input =
     let nextNodes (cur: string list, map: Map<string, string array>) =
@@ -33,28 +31,17 @@ let part1 input =
     parse input |> Map |> paths "you" "out" |> List.length
 
 let part2 input =
-    let parsed = parse input |> Array.append [| "out", [||] |]
-    let name2index = parsed |> Array.mapi (fun i (key, _) -> key, i |> int16) |> Map
-    let getIndex n = name2index[n]
-    let map = parsed |> Array.map (fun (_, value) -> value |> Array.map getIndex)
+    let map = parse input |> Map |> Map.add "out" [||]
 
-    let paths from to' =
-        let rec inner' node =
-            if node = to' then
-                1L
-            else
-                match map[node |> int] with
-                | [||] -> 0L
-                | next -> next |> Array.sumBy inner
+    let rec paths' (from, to') =
+        if from = to' then
+            1L
+        else
+            map[from] |> Array.sumBy (fun n -> paths (n, to'))
 
-        and inner = memorize inner'
-        inner from
+    and paths = memorize paths'
 
-    let combinePaths =
-        List.map getIndex
-        >> List.pairwise
-        >> List.map (fun x -> x ||> paths)
-        >> List.reduce (*)
+    let combinePaths = List.pairwise >> List.map paths >> List.reduce (*)
 
     combinePaths [ "svr"; "fft"; "dac"; "out" ]
     + combinePaths [ "svr"; "dac"; "fft"; "out" ]
