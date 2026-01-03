@@ -29,29 +29,32 @@ let part1 input =
     let problems = parseProblems input
 
     let classify (x, y, counts) =
-        let area = x * y
-        let parcels = Array.zip shapes counts |> Array.sumBy (fun (a, b) -> a * b)
+        let moreParcelsThanSpace =
+            let area = x * y
+            let parcels = Array.zip shapes counts |> Array.sumBy (fun (a, b) -> a * b)
+            parcels > area
 
-        let shapeCount = Array.sum counts
-        let thirdsArea = (x / 3) * (y / 3)
+        let shapesFitArea =
+            let shapeCount = Array.sum counts
+            let thirdsArea = (x / 3) * (y / 3)
+            shapeCount <= thirdsArea
 
-        if (parcels > area) then DoesntFit
-        else if (shapeCount <= thirdsArea) then Fit
+        if moreParcelsThanSpace then DoesntFit
+        else if shapesFitArea then Fit
         else MightFit
 
     let classes =
         problems
-        |> Array.groupBy classify
-        |> Array.map (fun (c, p) -> c, p |> Array.length)
+        |> Seq.groupBy classify
+        |> Seq.map (fun (c, p) -> c, p |> Seq.length)
+        |> Map.ofSeq
 
     let find c =
-        classes |> Array.tryFind (fst >> ((=) c)) |> Option.defaultValue (c, 0) |> snd
+        classes |> Map.tryFind c |> Option.defaultValue 0
 
     $"Fit: {find Fit}; MightFit: {find MightFit}; DoesntFit: {find DoesntFit}"
 
-let part2 = (fun _ -> "🎄")
-
-let run = runReadAllText part1 part2
+let run = runReadAllText part1 (fun _ -> "🎄🏁🫡")
 
 module tests =
     open Swensen.Unquote
@@ -105,4 +108,5 @@ module tests =
               (12, 5, [| 1; 0; 1; 0; 3; 2 |]) |]
 
     [<Fact>]
-    let ``Example`` () = part1 example =! "Fit: 0; MightFit: 3; DoesntFit: 0" // lol
+    let ``Example`` () =
+        part1 example =! "Fit: 0; MightFit: 3; DoesntFit: 0" // lol
