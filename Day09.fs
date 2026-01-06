@@ -14,15 +14,10 @@ let allCombinations (r: 'a array) =
 let calcArea (a: Vector2, b: Vector2) =
     let diff = b - a
     let abs = Vector2.Abs diff
-    (int64 abs.X  + 1L) * (int64 abs.Y + 1L)
+    (int64 abs.X + 1L) * (int64 abs.Y + 1L)
 
 let part1 input =
-    input
-    |> parse
-    |> allCombinations
-    |> Seq.map (fun p -> p, calcArea p)
-    |> Seq.maxBy snd
-    |> snd
+    input |> parse |> allCombinations |> Seq.map calcArea |> Seq.max
 
 let part2 = (fun _ -> 0)
 
