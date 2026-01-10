@@ -1,8 +1,47 @@
-﻿module aoc25.Day09
+module aoc25.Day09
 
-open System.Numerics
+[<Struct>]
+type Point = { x: int; y: int }
 
-let parse = Array.map (StringEx.splitC ',' >> Array.map float32 >> Vector2)
+[<Struct>]
+type Rect = { x1: int; x2: int; y1: int; y2: int }
+
+module Rect =
+    let create a b =
+        { x1 = min a.x b.x
+          x2 = max a.x b.x
+          y1 = min a.y b.y
+          y2 = max a.y b.y }
+
+    let corners r =
+        [| { x = r.x1; y = r.y1 }
+           { x = r.x1; y = r.y2 }
+           { x = r.x2; y = r.y1 }
+           { x = r.x2; y = r.y2 } |]
+
+    let area r =
+        (int64 (r.x2 - r.x1) + 1L) * (int64 (r.y2 - r.y1) + 1L)
+
+[<Struct>]
+type Segment =
+    | Horizontal of y: int * x1: int * x2: int
+    | Vertical of x: int * y1: int * y2: int
+
+module Segment =
+    let ofPoints a b =
+        if a.y = b.y then Horizontal(a.y, min a.x b.x, max a.x b.x)
+        elif a.x = b.x then Vertical(a.x, min a.y b.y, max a.y b.y)
+        else failwith "Edges must be axis-aligned"
+
+    let contains point =
+        function
+        | Horizontal(y, x1, x2) -> point.y = y && point.x >= x1 && point.x <= x2
+        | Vertical(x, y1, y2) -> point.x = x && point.y >= y1 && point.y <= y2
+
+    let crossesRect rect =
+        function
+        | Horizontal(y, x1, x2) -> y > rect.y1 && y < rect.y2 && max x1 rect.x1 < min x2 rect.x2
+        | Vertical(x, y1, y2) -> x > rect.x1 && x < rect.x2 && max y1 rect.y1 < min y2 rect.y2
 
 let allCombinations (r: 'a array) =
     seq {
@@ -11,53 +50,51 @@ let allCombinations (r: 'a array) =
                 r[i], r[j]
     }
 
-let calcArea (a: Vector2, b: Vector2) =
-    let diff = b - a |> Vector2.Abs
-    (int64 diff.X + 1L) * (int64 diff.Y + 1L)
+let parsePoints =
+    let parsePoint s =
+        let parts = StringEx.splitC ',' s
+        { x = int parts[0]; y = int parts[1] }
+
+    Array.map parsePoint
 
 let part1 input =
-    input |> parse |> allCombinations |> Seq.map calcArea |> Seq.max
+    input
+    |> parsePoints
+    |> allCombinations
+    |> Seq.map (fun (a, b) -> Rect.create a b |> Rect.area)
+    |> Seq.max
 
-// lazy AI implementation
 let part2 input =
-    let tiles =
-        input |> Array.map (StringEx.splitC ',' >> fun a -> (int a[0], int a[1]))
+    let tiles = input |> parsePoints
 
-    let n = tiles.Length
+    let edges =
+        Array.init tiles.Length (fun i -> Segment.ofPoints tiles[i] tiles[(i + 1) % tiles.Length])
 
-    let hEdges, vEdges =
-        [| for i in 0 .. n - 1 -> (tiles[i], tiles[(i + 1) % n]) |]
-        |> Array.partition (fun ((_, y1), (_, y2)) -> y1 = y2)
+    let vEdges = edges |> Array.filter _.IsVertical
 
-    let isInside px py =
-        vEdges
-        |> Array.sumBy (fun ((x1, y1), (_, y2)) ->
-            let lo, hi = min y1 y2, max y1 y2
-            if x1 <= px && py >= lo && py < hi then 1 else 0)
-        |> fun c -> c % 2 = 1
+    let isInside point =
+        let onBoundary = edges |> Array.exists (Segment.contains point)
 
-    let hCuts rx1 ry1 rx2 ry2 ((x1, y1), (x2, _)) =
-        y1 > ry1 && y1 < ry2 && max x1 x2 > rx1 && min x1 x2 < rx2
+        let rightwardCrossings =
+            vEdges
+            |> Array.sumBy (function
+                | Vertical(x, y1, y2) when x <= point.x && point.y >= y1 && point.y < y2 -> 1
+                | _ -> 0)
 
-    let vCuts rx1 ry1 rx2 ry2 ((x1, y1), (_, y2)) =
-        x1 > rx1 && x1 < rx2 && max y1 y2 > ry1 && min y1 y2 < ry2
+        onBoundary || (rightwardCrossings % 2 = 1)
 
-    let area (x1, y1) (x2, y2) =
-        (int64 (abs (x2 - x1)) + 1L) * (int64 (abs (y2 - y1)) + 1L)
-
-    let isValid ((x1, y1), (x2, y2)) =
-        let rx1, rx2 = min x1 x2, max x1 x2
-        let ry1, ry2 = min y1 y2, max y1 y2
-
-        isInside rx1 ry1
-        && not (hEdges |> Array.exists (hCuts rx1 ry1 rx2 ry2))
-        && not (vEdges |> Array.exists (vCuts rx1 ry1 rx2 ry2))
+    let isValid rect =
+        Rect.corners rect |> Array.forall isInside
+        && not (edges |> Array.exists (Segment.crossesRect rect))
 
     tiles
     |> allCombinations
-    |> Seq.sortByDescending (fun (a, b) -> area a b)
-    |> Seq.find isValid
-    ||> area
+    |> Seq.fold
+        (fun best (a, b) ->
+            let rect = Rect.create a b
+            let area = Rect.area rect
+            if area > best && isValid rect then area else best)
+        0L
 
 let run = runReadAllLines part1 part2
 
@@ -68,12 +105,27 @@ module tests =
     let example1 = [| "7,1"; "11,1"; "11,7"; "9,7"; "9,5"; "2,5"; "2,3"; "7,3" |]
 
     [<Fact>]
-    let ``calc area`` () =
-        calcArea (Vector2(7f, 1f), Vector2(11f, 7f)) =! 35L
-        calcArea (Vector2(11f, 7f), Vector2(7f, 1f)) =! 35L
+    let ``rect area`` () =
+        test <@ Rect.create { x = 7; y = 1 } { x = 11; y = 7 } |> Rect.area = 35L @>
+        test <@ Rect.create { x = 11; y = 7 } { x = 7; y = 1 } |> Rect.area = 35L @>
 
     [<Fact>]
-    let ``Part 1 example`` () = part1 example1 =! 50
+    let ``rect create orders bounds`` () =
+        test <@ Rect.create { x = 5; y = 7 } { x = 2; y = 3 } = { x1 = 2; x2 = 5; y1 = 3; y2 = 7 } @>
+
+    [<Fact>]
+    let ``segment ofPoints axis aligned`` () =
+        test <@ Segment.ofPoints { x = 1; y = 2 } { x = 4; y = 2 } = Horizontal(2, 1, 4) @>
+        test <@ Segment.ofPoints { x = 3; y = 1 } { x = 3; y = 5 } = Vertical(3, 1, 5) @>
+
+    [<Fact>]
+    let ``segment crosses rect when spanning`` () =
+        let rect = Rect.create { x = 1; y = 1 } { x = 4; y = 4 }
+        test <@ Segment.crossesRect rect (Vertical(2, 0, 5)) = true @>
+        test <@ Segment.crossesRect rect (Horizontal(0, 0, 5)) = false @>
+
+    [<Fact>]
+    let ``Part 1 example`` () = part1 example1 =! 50L
 
     [<Fact>]
     let ``Part 2 example`` () = part2 example1 =! 24L
